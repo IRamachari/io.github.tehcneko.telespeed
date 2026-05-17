@@ -1,4 +1,3 @@
-
 name: Build TeleSpeed APK
 
 on:
@@ -7,7 +6,7 @@ on:
     branches: [ main ]
 
 env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true   # fixes Node.js 20 deprecation warning
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build:
@@ -23,12 +22,20 @@ jobs:
           distribution: temurin
           java-version: 17
 
+      - name: Decode keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > app/telespeed.jks
+
       - name: Grant execute permission
         run: chmod +x gradlew
 
       - name: Build release APK
-        run: ./gradlew assembleRelease --stacktrace --info   # surfaces hidden errors
-        
+        env:
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+        run: ./gradlew assembleRelease --stacktrace --info
+
       - name: List APK output (debug)
         if: always()
         run: find app/build/outputs -name "*.apk" 2>/dev/null || echo "No APKs found"
@@ -38,4 +45,4 @@ jobs:
         with:
           name: TeleSpeed-APK
           path: app/build/outputs/apk/release/*.apk
-          if-no-files-found: error   # fails loudly instead of silently skipping
+          if-no-files-found: error

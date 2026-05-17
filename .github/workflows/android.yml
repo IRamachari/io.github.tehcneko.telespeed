@@ -1,9 +1,13 @@
+
 name: Build TeleSpeed APK
 
 on:
   workflow_dispatch:
   push:
     branches: [ main ]
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true   # fixes Node.js 20 deprecation warning
 
 jobs:
   build:
@@ -23,10 +27,15 @@ jobs:
         run: chmod +x gradlew
 
       - name: Build release APK
-        run: ./gradlew assembleRelease
+        run: ./gradlew assembleRelease --stacktrace --info   # surfaces hidden errors
+        
+      - name: List APK output (debug)
+        if: always()
+        run: find app/build/outputs -name "*.apk" 2>/dev/null || echo "No APKs found"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: TeleSpeed-APK
           path: app/build/outputs/apk/release/*.apk
+          if-no-files-found: error   # fails loudly instead of silently skipping
